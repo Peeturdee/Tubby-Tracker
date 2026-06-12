@@ -42,7 +42,15 @@
     text-transform: uppercase;
     color: var(--muted);
     font-weight: 400;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
+  }
+
+  #month-label {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+    display: block;
   }
 
   .summary {
@@ -73,26 +81,16 @@
   }
 
   thead th:nth-child(2),
-  thead th:nth-child(3) {
-    text-align: right;
-  }
+  thead th:nth-child(3) { text-align: right; }
 
   tbody tr {
     border-bottom: 1px solid var(--border);
     transition: background 0.1s;
   }
 
-  tbody tr:active {
-    background: var(--accent-dim);
-  }
-
-  tbody tr.today {
-    background: rgba(79, 195, 247, 0.06);
-  }
-
-  tbody tr.entered {
-    background: rgba(129, 199, 132, 0.04);
-  }
+  tbody tr:active { background: var(--accent-dim); }
+  tbody tr.today { background: rgba(79, 195, 247, 0.06); }
+  tbody tr.entered { background: rgba(129, 199, 132, 0.04); }
 
   td {
     padding: 11px 6px;
@@ -100,9 +98,7 @@
     vertical-align: middle;
   }
 
-  .date-cell {
-    font-size: 13px;
-  }
+  .date-cell { font-size: 13px; }
 
   .day-name {
     font-size: 11px;
@@ -117,18 +113,10 @@
     line-height: 1.2;
   }
 
-  .month-label {
-    font-size: 10px;
-    color: var(--muted);
-  }
+  tr.today .day-num { color: var(--today); }
+  tr.past .day-num { color: var(--muted); }
 
-  tr.today .day-num {
-    color: var(--today);
-  }
-
-  .lbs-cell {
-    text-align: right;
-  }
+  .lbs-cell { text-align: right; }
 
   .lbs-input {
     background: transparent;
@@ -145,15 +133,8 @@
     appearance: none;
   }
 
-  .lbs-input:focus {
-    border-bottom-color: var(--accent);
-    color: var(--accent);
-  }
-
-  .lbs-input.has-value {
-    color: var(--entered);
-    border-bottom-color: transparent;
-  }
+  .lbs-input:focus { border-bottom-color: var(--accent); color: var(--accent); }
+  .lbs-input.has-value { color: var(--entered); border-bottom-color: transparent; }
 
   .stones-cell {
     text-align: right;
@@ -164,9 +145,7 @@
     white-space: nowrap;
   }
 
-  .stones-cell.has-value {
-    color: var(--text);
-  }
+  .stones-cell.has-value { color: var(--text); }
 
   .today-badge {
     display: inline-block;
@@ -225,6 +204,7 @@
 
 <header>
   <h1>Pete's Tubby Tracker</h1>
+  <span id="month-label"></span>
   <div class="summary" id="summary">Enter your daily weight in lbs</div>
 </header>
 
@@ -248,7 +228,8 @@
 
 <script>
 const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MONTHS_LONG = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const STORAGE_KEY = 'weightTracker_v1';
 
 function toStonesLbs(lbs) {
@@ -294,22 +275,32 @@ function build() {
   const today = new Date();
   today.setHours(0,0,0,0);
 
-  for (let i = 0; i < 31; i++) {
-    const d = new Date(today);
-    d.setDate(today.getDate() + i);
+  const year = today.getFullYear();
+  const month = today.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  document.getElementById('month-label').textContent = `${MONTHS_LONG[month]} ${year}`;
+
+  let todayRow = null;
+
+  for (let i = 1; i <= daysInMonth; i++) {
+    const d = new Date(year, month, i);
     const key = dateKey(d);
-    const isToday = i === 0;
+    const isToday = d.getTime() === today.getTime();
+    const isPast = d < today;
 
     const tr = document.createElement('tr');
     if (isToday) tr.classList.add('today');
+    if (isPast && !isToday) tr.classList.add('past');
     if (data[key]) tr.classList.add('entered');
+    if (isToday) todayRow = tr;
 
     // Date cell
     const tdDate = document.createElement('td');
     tdDate.className = 'date-cell';
     const todayBadge = isToday ? `<span class="today-badge">Today</span>` : '';
     tdDate.innerHTML = `
-      <span class="day-name">${DAYS[d.getDay()]} ${MONTHS[d.getMonth()]}</span>
+      <span class="day-name">${DAYS[d.getDay()]} ${MONTHS_SHORT[month]}</span>
       <span class="day-num">${d.getDate()}${todayBadge}</span>
     `;
     tr.appendChild(tdDate);
@@ -361,6 +352,11 @@ function build() {
   }
 
   updateSummary(data);
+
+  // Scroll today into view
+  if (todayRow) {
+    setTimeout(() => todayRow.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150);
+  }
 }
 
 function clearAll() {
