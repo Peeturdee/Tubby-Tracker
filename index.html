@@ -234,7 +234,7 @@ const STORAGE_KEY = 'weightTracker_v1';
 
 function toStonesLbs(lbs) {
   if (!lbs || isNaN(lbs)) return '—';
-  const totalLbs = Math.floor(lbs);
+  const totalLbs = Math.round(lbs);
   const stones = Math.floor(totalLbs / 14);
   const remLbs = totalLbs % 14;
   return `${stones}st ${remLbs}lb`;
